@@ -11,7 +11,7 @@ swagger_template = {
         "version": "1.0.0"
     },
     "basePath": "/",
-    "schemes": ["http"]
+    "schemes": ["https"]
 }
 
 swagger_config = {
