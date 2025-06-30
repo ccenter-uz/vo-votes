@@ -1,4 +1,4 @@
-from flask import jsonify
+from flask import jsonify, request
 from .services.fetcher import fetch_votes
 from .core.cache import cache, update_queue
 
@@ -7,22 +7,22 @@ def register_routes(app):
     Register all Flask routes to the application.
     """
 
-    @app.route("/<id>", methods=["GET"])
-    def get_by_id(id):
+    @app.route("/", methods=["GET"])
+    def get_by_id():
         """
-        Get cached or fresh voting results by ID.
+        Get cached or fresh voting results by ID
         ---
         tags:
           - Votes
         parameters:
           - name: id
-            in: path
+            in: query
             type: string
             required: true
-            description: ID provided by the call center
+            description: ID provided by the call center 
         responses:
           200:
-            description: List of vote results
+            description: Vote results
             schema:
               type: array
               items:
@@ -33,21 +33,23 @@ def register_routes(app):
                     example: "1"
                   votes:
                     type: string
-                    example: "1200"
-          500:
-            description: Failed to fetch or process data
+                    example: "1245"
+          400:
+            description: Missing or invalid ID
         """
-        # Return from cache if available
-        if id in cache:
-            print(f"[INFO] Cache HIT: {id}")
-            return jsonify(cache[id])
-        
-        # Otherwise, fetch live and store in cache
+        poll_id = request.args.get("id")
+        if not poll_id:
+            return jsonify({"error": "Missing required parameter: id"}), 400
+
+        if poll_id in cache:
+            print(f"[INFO] Cache HIT: {poll_id}")
+            return jsonify(cache[poll_id])
+
         try:
-            print(f"[INFO] Cache MISS: {id}. Fetching and enabling auto-refresh.")
-            result = fetch_votes(id)
-            cache[id] = result
-            update_queue.add(id)
+            print(f"[INFO] Cache MISS: {poll_id}. Fetching and enabling auto-refresh.")
+            result = fetch_votes(poll_id)
+            cache[poll_id] = result
+            update_queue.add(poll_id)
             return jsonify(result)
         except Exception as e:
             return jsonify({"error": str(e)}), 500
